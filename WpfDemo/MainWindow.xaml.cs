@@ -20,34 +20,19 @@ namespace WpfDemo
             Generate(null, null);
         }
 
-        private IEnumerable<FrameworkElement> GetUIElements()
+        private IEnumerable<Uri> GetUris()
         {
             var paths = Directory.GetFiles(@"C:\Users\Nomyfan\Desktop\ZuneLike\WpfDemo\bin\Debug\Covers");
             foreach (var path in paths)
             {
-                var bitmap = new BitmapImage(new Uri(path));
-                yield return new Image { Source = bitmap };
-            }
-        }
-
-        private IEnumerable<FrameworkElement> GetUIElements2()
-        {
-            var rnd = new Random();
-            for (int i = 0; i < 100; i++)
-            {
-                var r = (byte)rnd.Next(0, 255);
-                var g = (byte)rnd.Next(0, 255);
-                var b = (byte)rnd.Next(0, 255);
-                var color = Color.FromRgb(r, g, b);
-
-                yield return new Rectangle { Fill = new SolidColorBrush(color) };
+                yield return new Uri(path);
             }
         }
 
         private void Generate(object sender, RoutedEventArgs e)
         {
             zunelike.InitializeGrid();
-            zunelike.SetElements(GetUIElements());
+            zunelike.SetUris(GetUris());
             zunelike.Render();
         }
     }

@@ -5,10 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Xml;
+using System.Windows.Media.Imaging;
 
 namespace ZuneLike
 {
@@ -37,7 +36,10 @@ namespace ZuneLike
         public ZuneLike() : this(80, 10, 18)
         { }
 
-        public ZuneLike(int gridLength, int rows, int cols, IEnumerable<FrameworkElement> elements = null)
+        public ZuneLike(int gridLength, int rows, int cols) : this(gridLength, rows, cols, null)
+        { }
+
+        public ZuneLike(int gridLength, int rows, int cols, IEnumerable<Uri> uris)
         {
             InitializeComponent();
 
@@ -47,19 +49,18 @@ namespace ZuneLike
             SyncContext = SynchronizationContext.Current;
             LoadResources();
             BackgroundColor = Colors.Black;
-            if (elements != null)
-            {
-                SetElements(elements);
-            }
+
+            SetUris(uris);
 
             Timer = new System.Windows.Forms.Timer
             {
                 Interval = 5_000
             };
-            Timer.Tick += (s, e) => Flip(Elements);
+            Timer.Tick += (s, e) => Flip(Images);
             Timer.Start();
 
         }
+
         #endregion // CTORs
 
         #region Public methods
@@ -89,25 +90,35 @@ namespace ZuneLike
         {
             foreach (var block in Blocks)
             {
-                var next = CloneFrameworkElement(Elements[rnd.Next(0, Elements.Count)]);
+                var uri = ImageUris[rnd.Next(0, ImageUris.Count)];
+                try
+                {
+                    var source = new BitmapImage(uri);
+                    var next = new Image { Source = source };
 
-                Grid.SetRow(next, block.Y);
-                Grid.SetColumn(next, block.X);
-                Grid.SetRowSpan(next, block.Size);
-                Grid.SetColumnSpan(next, block.Size);
-                containerGrid.Children.Add(next);
+                    Grid.SetRow(next, block.Y);
+                    Grid.SetColumn(next, block.X);
+                    Grid.SetRowSpan(next, block.Size);
+                    Grid.SetColumnSpan(next, block.Size);
+                    containerGrid.Children.Add(next);
+                    Images.Add(next);
+                }
+                catch (ArgumentException) { }
+                catch (FileNotFoundException) { }
             }
 
             GC.Collect();
         }
 
-        public void SetElements(IEnumerable<FrameworkElement> frameworkElements)
+        public void SetUris(IEnumerable<Uri> uris)
         {
-            Elements.Clear();
-
-            foreach (var element in frameworkElements)
+            if (uris != null)
             {
-                Elements.Add(element);
+                ImageUris.Clear();
+                foreach (var uri in uris)
+                {
+                    ImageUris.Add(uri);
+                }
             }
         }
 
@@ -201,40 +212,23 @@ namespace ZuneLike
             return largestSize;
         }
 
-        private FrameworkElement CloneFrameworkElement(FrameworkElement element)
-        {
-            string s = XamlWriter.Save(element);
-            var stringReader = new StringReader(s);
-            var xmlReader = XmlTextReader.Create(stringReader, new XmlReaderSettings());
-            var next = (FrameworkElement)XamlReader.Load(xmlReader);
-            next.SetValue(MarginProperty, new Thickness(1));
-            return next;
-        }
-
         private void Flip(IReadOnlyList<FrameworkElement> elements)
         {
             if (containerGrid.Children != null && containerGrid.Children.Count > 0)
             {
-                UIElement lastFadeOutElement = containerGrid.Children[rnd.Next(0, containerGrid.Children.Count)];
+                var image = containerGrid.Children[rnd.Next(0, containerGrid.Children.Count)] as Image;
+                var uri = ImageUris[rnd.Next(0, ImageUris.Count)];
+                var source = new BitmapImage(uri);
 
-
-                var next = CloneFrameworkElement(elements[rnd.Next(0, elements.Count)]);
-                Grid.SetRow(next, (int)lastFadeOutElement.GetValue(Grid.RowProperty));
-                Grid.SetRowSpan(next, (int)lastFadeOutElement.GetValue(Grid.RowSpanProperty));
-                Grid.SetColumn(next, (int)lastFadeOutElement.GetValue(Grid.ColumnProperty));
-                Grid.SetColumnSpan(next, (int)lastFadeOutElement.GetValue(Grid.ColumnSpanProperty));
-                next.Opacity = 0;
-                containerGrid.Children.Add(next);
-
-                Storyboard.SetTarget(FadeOutAnimation, lastFadeOutElement);
-                Storyboard.SetTarget(FadeInAnimation, next);
+                Storyboard.SetTarget(FadeOutAnimation, image);
+                Storyboard.SetTarget(FadeInAnimation, image);
 
                 Task.Run(() =>
                 {
                     SyncContext.Post((o) => FadeOutStoryboard.Begin(), null);
-                    Task.Delay(2_000).GetAwaiter().GetResult();
+                    Task.Delay(1_100).GetAwaiter().GetResult();
+                    SyncContext.Post((o) => image.Source = source, null);
                     SyncContext.Post((o) => FadeInStoryboard.Begin(), null);
-                    SyncContext.Post((o) => containerGrid.Children.Remove(lastFadeOutElement), null);
                 });
             }
         }
@@ -245,6 +239,8 @@ namespace ZuneLike
 
         private Random rnd = new Random();
         public System.Windows.Forms.Timer Timer { get; set; }
+
+        public List<Uri> ImageUris { get; set; } = new List<Uri>();
 
         private Color backgroundColor;
         public Color BackgroundColor
@@ -281,7 +277,7 @@ namespace ZuneLike
         }
 
         private List<Block> Blocks { get; } = new List<Block>();
-        public List<FrameworkElement> Elements { get; } = new List<FrameworkElement>();
+        public List<Image> Images { get; } = new List<Image>();
 
         #endregion // Properties
 
