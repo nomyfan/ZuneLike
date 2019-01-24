@@ -54,6 +54,7 @@
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="Block.cs" />
+    <Compile Include="ImageSourceMap.cs" />
     <Compile Include="Part.cs" />
     <Compile Include="ZuneLike.xaml.cs">
       <DependentUpon>ZuneLike.xaml</DependentUpon>

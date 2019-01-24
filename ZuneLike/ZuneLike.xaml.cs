@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 
 namespace ZuneLike
 {
@@ -56,7 +55,7 @@ namespace ZuneLike
             {
                 Interval = 5_000
             };
-            Timer.Tick += (s, e) => Flip(Images);
+            Timer.Tick += (s, e) => Flip();
             Timer.Start();
 
         }
@@ -90,10 +89,10 @@ namespace ZuneLike
         {
             foreach (var block in Blocks)
             {
-                var uri = ImageUris[rnd.Next(0, ImageUris.Count)];
+                var uri = ImageSourceMap.Uris[rnd.Next(0, ImageSourceMap.Count)];
                 try
                 {
-                    var source = new BitmapImage(uri);
+                    var source = ImageSourceMap[uri];
                     var next = new Image { Source = source };
 
                     Grid.SetRow(next, block.Y);
@@ -101,25 +100,16 @@ namespace ZuneLike
                     Grid.SetRowSpan(next, block.Size);
                     Grid.SetColumnSpan(next, block.Size);
                     containerGrid.Children.Add(next);
-                    Images.Add(next);
+                    next.SetValue(MarginProperty, new Thickness(1));
                 }
                 catch (ArgumentException) { }
                 catch (FileNotFoundException) { }
             }
-
-            GC.Collect();
         }
 
         public void SetUris(IEnumerable<Uri> uris)
         {
-            if (uris != null)
-            {
-                ImageUris.Clear();
-                foreach (var uri in uris)
-                {
-                    ImageUris.Add(uri);
-                }
-            }
+            ImageSourceMap.SetUris(uris);
         }
 
         #endregion // Public methods
@@ -212,13 +202,13 @@ namespace ZuneLike
             return largestSize;
         }
 
-        private void Flip(IReadOnlyList<FrameworkElement> elements)
+        private void Flip()
         {
             if (containerGrid.Children != null && containerGrid.Children.Count > 0)
             {
                 var image = containerGrid.Children[rnd.Next(0, containerGrid.Children.Count)] as Image;
-                var uri = ImageUris[rnd.Next(0, ImageUris.Count)];
-                var source = new BitmapImage(uri);
+                var uri = ImageSourceMap.Uris[rnd.Next(0, ImageSourceMap.Count)];
+                var source = ImageSourceMap[uri];
 
                 Storyboard.SetTarget(FadeOutAnimation, image);
                 Storyboard.SetTarget(FadeInAnimation, image);
@@ -227,8 +217,12 @@ namespace ZuneLike
                 {
                     SyncContext.Post((o) => FadeOutStoryboard.Begin(), null);
                     Task.Delay(1_100).GetAwaiter().GetResult();
-                    SyncContext.Post((o) => image.Source = source, null);
-                    SyncContext.Post((o) => FadeInStoryboard.Begin(), null);
+                    SyncContext.Post((o) =>
+                    {
+                        ImageSourceMap.MinusOneReference(image.Source);
+                        image.Source = source;
+                        FadeInStoryboard.Begin();
+                    }, null);
                 });
             }
         }
@@ -240,7 +234,7 @@ namespace ZuneLike
         private Random rnd = new Random();
         public System.Windows.Forms.Timer Timer { get; set; }
 
-        public List<Uri> ImageUris { get; set; } = new List<Uri>();
+        private ImageSourceMap ImageSourceMap { get; set; } = new ImageSourceMap();
 
         private Color backgroundColor;
         public Color BackgroundColor
@@ -277,7 +271,6 @@ namespace ZuneLike
         }
 
         private List<Block> Blocks { get; } = new List<Block>();
-        public List<Image> Images { get; } = new List<Image>();
 
         #endregion // Properties
 
