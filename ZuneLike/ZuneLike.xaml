@@ -8,7 +8,7 @@
              >
     <UserControl.Resources>
         <DoubleAnimation x:Key="FadeOutAnimation" From="1" To="0" Duration="0:0:1" Storyboard.TargetProperty="Opacity"/>
-        <DoubleAnimation x:Key="FadeInAnimation" From="0" To="1" Duration="0:0:1"  Storyboard.TargetProperty="Opacity"/>
+        <DoubleAnimation x:Key="FadeInAnimation" From="0" To="1" Duration="0:0:1.5"  Storyboard.TargetProperty="Opacity"/>
     </UserControl.Resources>
 
     <Grid x:Name="rootGrid">

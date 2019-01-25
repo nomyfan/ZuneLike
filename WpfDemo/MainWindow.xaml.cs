@@ -32,6 +32,7 @@ namespace WpfDemo
         private void Generate(object sender, RoutedEventArgs e)
         {
             zunelike.InitializeGrid();
+            zunelike.Interval = 10_000;
             zunelike.SetUris(GetUris());
             zunelike.Render();
         }

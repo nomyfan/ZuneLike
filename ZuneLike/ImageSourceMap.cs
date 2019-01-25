@@ -10,35 +10,34 @@ namespace ZuneLike
     {
         class ImageSourceCounter
         {
-            public Uri Uri { get; set; }
             public int Count { get; set; }
             public ImageSource Source { get; set; }
         }
 
-        private readonly List<ImageSourceCounter> sources = new List<ImageSourceCounter>();
+        readonly Dictionary<Uri, ImageSourceCounter> mapper = new Dictionary<Uri, ImageSourceCounter>();
 
-        public IReadOnlyList<Uri> Uris => sources.Select(s => s.Uri).ToList();
+        public IReadOnlyList<Uri> Uris => mapper.Keys.ToList();
 
-        public int Count => sources.Count;
+        public int Count => mapper.Keys.Count;
 
         public ImageSource this[Uri uri]
         {
             get
             {
-                if (uri != null)
+                try
                 {
-                    var first = sources.FirstOrDefault(s => s.Uri == uri);
-                    if (first != null)
+                    if (mapper.TryGetValue(uri, out var counter))
                     {
-                        if (first.Count == 0)
+                        if (counter.Count==0)
                         {
-                            first.Source = new BitmapImage(uri);
+                            counter.Source = new BitmapImage(uri);
                         }
-                        first.Count++;
-                        return first.Source;
+                        counter.Count++;
+                        return counter.Source;
                     }
+                    return null;
                 }
-                return null;
+                catch (Exception) { return null; }
             }
         }
 
@@ -46,7 +45,7 @@ namespace ZuneLike
         {
             if (source != null)
             {
-                var first = sources.FirstOrDefault(s => s.Source == source);
+                var first = mapper.Values.FirstOrDefault(v => v.Source == source);
                 if (first != null)
                 {
                     first.Count--;
@@ -58,17 +57,20 @@ namespace ZuneLike
             }
         }
 
-
-        public void SetUris(IEnumerable<Uri> uris)
+        public void AddUris(IEnumerable<Uri> uris)
         {
             if (uris != null)
             {
-                sources.Clear();
                 foreach (var uri in uris)
                 {
-                    sources.Add(new ImageSourceCounter { Uri = uri });
+                    mapper.Add(uri, new ImageSourceCounter());
                 }
             }
+        }
+
+        public void ClearUris()
+        {
+            mapper.Clear();
         }
 
         // CTORs
@@ -76,7 +78,7 @@ namespace ZuneLike
 
         public ImageSourceMap(IEnumerable<Uri> uris)
         {
-            SetUris(uris);
+            AddUris(uris);
         }
     }
 }

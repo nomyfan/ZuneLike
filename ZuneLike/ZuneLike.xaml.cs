@@ -53,7 +53,7 @@ namespace ZuneLike
 
             Timer = new System.Windows.Forms.Timer
             {
-                Interval = 5_000
+                Interval = Interval
             };
             Timer.Tick += (s, e) => Flip();
             Timer.Start();
@@ -109,7 +109,7 @@ namespace ZuneLike
 
         public void SetUris(IEnumerable<Uri> uris)
         {
-            ImageSourceMap.SetUris(uris);
+            ImageSourceMap.AddUris(uris);
         }
 
         #endregion // Public methods
@@ -216,7 +216,7 @@ namespace ZuneLike
                 Task.Run(() =>
                 {
                     SyncContext.Post((o) => FadeOutStoryboard.Begin(), null);
-                    Task.Delay(1_100).GetAwaiter().GetResult();
+                    Task.Delay(1_300).GetAwaiter().GetResult();
                     SyncContext.Post((o) =>
                     {
                         ImageSourceMap.MinusOneReference(image.Source);
@@ -249,6 +249,13 @@ namespace ZuneLike
 
         public int GridLength { get; set; }
         public int LargestSize { get; set; } = 4;
+
+        private int interval = 10_000;
+        public int Interval
+        {
+            get => interval;
+            set => interval = value >= 1_000 ? value : interval;
+        }
 
         private int rows;
         public int Rows
