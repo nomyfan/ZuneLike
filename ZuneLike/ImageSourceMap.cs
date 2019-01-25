@@ -28,7 +28,7 @@ namespace ZuneLike
                 {
                     if (mapper.TryGetValue(uri, out var counter))
                     {
-                        if (counter.Count==0)
+                        if (counter.Count == 0)
                         {
                             counter.Source = new BitmapImage(uri);
                         }
@@ -57,7 +57,7 @@ namespace ZuneLike
             }
         }
 
-        public void AddUris(IEnumerable<Uri> uris)
+        public void SetUris(IEnumerable<Uri> uris)
         {
             if (uris != null)
             {
@@ -78,7 +78,7 @@ namespace ZuneLike
 
         public ImageSourceMap(IEnumerable<Uri> uris)
         {
-            AddUris(uris);
+            SetUris(uris);
         }
     }
 }

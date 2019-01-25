@@ -14,11 +14,11 @@ namespace ZuneLike
     public partial class ZuneLike : UserControl
     {
         #region Resources
-        public DoubleAnimation FadeOutAnimation { get; set; }
-        public Storyboard FadeOutStoryboard { get; set; }
+        private DoubleAnimation FadeOutAnimation { get; set; }
+        private Storyboard FadeOutStoryboard { get; set; }
 
-        public DoubleAnimation FadeInAnimation { get; set; }
-        public Storyboard FadeInStoryboard { get; set; }
+        private DoubleAnimation FadeInAnimation { get; set; }
+        private Storyboard FadeInStoryboard { get; set; }
 
         private void LoadResources()
         {
@@ -32,24 +32,12 @@ namespace ZuneLike
         #endregion // Resources
 
         #region CTORs
-        public ZuneLike() : this(80, 10, 18)
-        { }
-
-        public ZuneLike(int gridLength, int rows, int cols) : this(gridLength, rows, cols, null)
-        { }
-
-        public ZuneLike(int gridLength, int rows, int cols, IEnumerable<Uri> uris)
+        public ZuneLike()
         {
             InitializeComponent();
-
-            GridLength = gridLength;
-            Rows = rows;
-            Columns = cols;
             SyncContext = SynchronizationContext.Current;
             LoadResources();
             BackgroundColor = Colors.Black;
-
-            SetUris(uris);
 
             Timer = new System.Windows.Forms.Timer
             {
@@ -57,17 +45,25 @@ namespace ZuneLike
             };
             Timer.Tick += (s, e) => Flip();
             Timer.Start();
+        }
 
+        public ZuneLike(int gridLength, IEnumerable<Uri> uris) : this()
+        {
+            GridLength = gridLength;
+            SetUris(uris);
         }
 
         #endregion // CTORs
 
         #region Public methods
-        public void InitializeGrid()
+        public void InitializeGrid(int rows = 10, int cols = 18)
         {
             containerGrid.Children.Clear();
             containerGrid.RowDefinitions.Clear();
             containerGrid.ColumnDefinitions.Clear();
+            Rows = rows;
+            Columns = cols;
+
             for (int i = 0; i < Rows; i++) containerGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(GridLength) });
             for (int i = 0; i < Columns; i++) containerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(GridLength) });
 
@@ -109,7 +105,7 @@ namespace ZuneLike
 
         public void SetUris(IEnumerable<Uri> uris)
         {
-            ImageSourceMap.AddUris(uris);
+            ImageSourceMap.SetUris(uris);
         }
 
         #endregion // Public methods
@@ -117,13 +113,15 @@ namespace ZuneLike
         #region Private methods
         private IEnumerable<Part> Depart(int rows, int cols)
         {
-            int halfRows = rows / 2;
-            int halfCols = cols / 2;
+            int upRows = rows / 2;
+            int downRows = rows - upRows;
+            int leftCols = cols / 2;
+            int rightCols = cols - leftCols;
             var parts = new Part[4];
-            parts[0] = new Part { X = 0, Y = 0, Width = halfCols, Height = halfRows };
-            parts[1] = new Part { X = halfCols, Y = 0, Width = halfCols, Height = halfRows };
-            parts[2] = new Part { X = 0, Y = halfRows, Width = halfCols, Height = halfRows };
-            parts[3] = new Part { X = halfCols, Y = halfRows, Width = halfCols, Height = halfRows };
+            parts[0] = new Part { X = 0, Y = 0, Width = leftCols, Height = upRows };
+            parts[1] = new Part { X = leftCols, Y = 0, Width = rightCols, Height = upRows };
+            parts[2] = new Part { X = 0, Y = upRows, Width = leftCols, Height = downRows };
+            parts[3] = new Part { X = leftCols, Y = upRows, Width = rightCols, Height = downRows };
 
             return parts;
         }
@@ -216,7 +214,7 @@ namespace ZuneLike
                 Task.Run(() =>
                 {
                     SyncContext.Post((o) => FadeOutStoryboard.Begin(), null);
-                    Task.Delay(1_300).GetAwaiter().GetResult();
+                    Task.Delay(1_500).GetAwaiter().GetResult();
                     SyncContext.Post((o) =>
                     {
                         ImageSourceMap.MinusOneReference(image.Source);
@@ -232,7 +230,7 @@ namespace ZuneLike
         private readonly SynchronizationContext SyncContext;
 
         private Random rnd = new Random();
-        public System.Windows.Forms.Timer Timer { get; set; }
+        private System.Windows.Forms.Timer Timer { get; set; }
 
         private ImageSourceMap ImageSourceMap { get; set; } = new ImageSourceMap();
 
@@ -247,8 +245,14 @@ namespace ZuneLike
             }
         }
 
-        public int GridLength { get; set; }
-        public int LargestSize { get; set; } = 4;
+        public int GridLength { get; set; } = 80;
+
+        private int largestSize = 4;
+        public int LargestSize
+        {
+            get => largestSize;
+            set => largestSize = value > 1 ? value : 4;
+        }
 
         private int interval = 10_000;
         public int Interval
@@ -257,7 +261,7 @@ namespace ZuneLike
             set => interval = value >= 1_000 ? value : interval;
         }
 
-        private int rows;
+        private int rows = 10;
         public int Rows
         {
             get => rows;
@@ -267,7 +271,7 @@ namespace ZuneLike
             }
         }
 
-        private int columns;
+        private int columns = 18;
         public int Columns
         {
             get => columns;
