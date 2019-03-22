@@ -28,12 +28,15 @@ namespace ZuneLike
                 {
                     if (mapper.TryGetValue(uri, out var counter))
                     {
-                        if (counter.Count == 0)
+                        lock (counter)
                         {
-                            counter.Source = new BitmapImage(uri);
+                            if (counter.Count == 0)
+                            {
+                                counter.Source = new BitmapImage(uri);
+                            }
+                            counter.Count++;
+                            return counter.Source;
                         }
-                        counter.Count++;
-                        return counter.Source;
                     }
                     return null;
                 }
@@ -43,10 +46,12 @@ namespace ZuneLike
 
         public void MinusOneReference(ImageSource source)
         {
-            if (source != null)
+            if (source == null) return;
+
+            var first = mapper.Values.FirstOrDefault(v => v.Source == source);
+            if (first != null)
             {
-                var first = mapper.Values.FirstOrDefault(v => v.Source == source);
-                if (first != null)
+                lock (first)
                 {
                     first.Count--;
                     if (first.Count == 0)
