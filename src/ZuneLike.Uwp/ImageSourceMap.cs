@@ -24,23 +24,23 @@ namespace ZuneLike
         {
             get
             {
-                try
+                if (mapper.TryGetValue(uri, out var counter))
                 {
-                    if (mapper.TryGetValue(uri, out var counter))
+                    lock (counter)
                     {
-                        lock (counter)
+                        if (counter.Count == 0)
                         {
-                            if (counter.Count == 0)
+                            try
                             {
                                 counter.Source = new BitmapImage(uri);
                             }
-                            counter.Count++;
-                            return counter.Source;
+                            catch (Exception) { return null; }
                         }
+                        counter.Count++;
+                        return counter.Source;
                     }
-                    return null;
                 }
-                catch (Exception) { return null; }
+                return null;
             }
         }
 
